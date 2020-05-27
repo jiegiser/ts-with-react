@@ -181,5 +181,118 @@ function App() {
 }
 
 export default App;
-
 ```
+使用自定义 hooks 来修改上面的 hoc：
+
+```ts
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+
+
+const useURLLoader = (url: string, deps: any[] = []) => {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    setLoading(true)
+    axios.get(url).then(result => {
+      setData(result.data)
+      setLoading(false)
+    })
+  }, deps)
+  return [data, loading]
+}
+
+export default useURLLoader
+```
+使用
+```ts
+import useURLLoader from './hook/useURLLoader'
+function App() {
+  const [ show, setShow ] = useState(true)
+  const [ data, loading ] = useURLLoader('https://dog.ceo/api/breeds/image/random', [show])
+  const dogResult = data as IShowResult
+  return (
+        <button onClick={() => setShow(!show)}>Toggle Tracker</button>
+        { loading ? <p>数据加载中</p>: 
+          <img src={dogResult && dogResult.message}></img>
+        }
+  )
+}
+```
+
+### useRef
+ref 在渲染中保持着唯一的引用。赋值以及取值拿到的都是唯一的状态，不会在不同的渲染中存在一定的隔离。
+修改 ref 的值不会引发组件的重新渲染的。
+
+使用 useRef 在组件更新的时候发生一些操作：
+```ts
+  const didMoubtRef = useRef(false)
+  useEffect(() => {
+    if(didMoubtRef.current) {
+      console.log('更新')
+    } else {
+      didMoubtRef.current = true
+    }
+  })
+```
+
+useRef 获取 dom 节点：
+```ts
+  const domRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if(domRef && domRef.current) {
+      domRef.current.focus()
+    }
+  }, [])
+```
+
+### useContext 解决多层传递属性
+使用
+在根组件中：
+```ts
+const themes: IThemePeops = {
+  'light': {
+    color: '#000',
+    background: '#eee'
+  },
+  'dark': {
+    color: '#fff',
+    background: '#222'
+  }
+}
+export const ThemeContext = React.createContext(themes.dark)
+function App() {
+  return (
+    <div className="App">
+      <ThemeContext.Provider value={themes.dark}>
+        <LikeButton/>
+      </ThemeContext.Provider>
+    </div>
+  );
+}
+export default App;
+```
+在子组件中去接收：
+```ts
+import React, { useContext } from 'react'
+import { ThemeContext } from '../App'
+const LikeButton: React.FC = () => {
+  const theme = useContext(ThemeContext)
+  const style = {
+    color: theme.color,
+    background: theme.background
+  }
+    return (
+    <>
+      <button style={ style } onClick={handleAlertClick}>Alert</button>
+    </>
+  )
+}
+```
+
+### Hook 规则
+
+- 只在最顶层使用 Hook
+- 只在 React 函数中调用 Hook
+
+> https://usehooks.com/ 网站很多 hooks
